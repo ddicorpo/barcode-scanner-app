@@ -12,7 +12,7 @@ export default function Validate({ token }) {
   const [showScanner, setShowScanner] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const html5QrCodeRef = useRef(null);
-  const scannerRunningRef = useRef(false); // Track if scanner is actually running
+  const scannerRunningRef = useRef(false);
 
   const handleValidate = async e => {
     e.preventDefault();
@@ -59,7 +59,6 @@ export default function Validate({ token }) {
     setIsScanning(false);
   };
 
-  // Start scanner after DOM is ready
   useEffect(() => {
     if (showScanner && isScanning && !scannerRunningRef.current) {
       const initScanner = async () => {
@@ -68,19 +67,19 @@ export default function Validate({ token }) {
           html5QrCodeRef.current = html5QrCode;
 
           await html5QrCode.start(
-            { facingMode: "user" },
+            { facingMode: "environment" },
             {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
+              fps: 10,
+              qrbox: { width: 250, height: 250 }
             },
             (decodedText) => {
-                setBarcode(decodedText);
-                stopScanner();
+              setBarcode(decodedText);
+              stopScanner();
             },
             (errorMessage) => {
-                // Don't show these as errors to user
+              // Don't show these as errors to user
             }
-        );
+          );
           scannerRunningRef.current = true;
         } catch (err) {
           console.error('Scanner start error:', err);
@@ -107,6 +106,9 @@ export default function Validate({ token }) {
             scannerRunningRef.current = false;
           });
         html5QrCodeRef.current = null;
+      } else {
+        html5QrCodeRef.current = null;
+        scannerRunningRef.current = false;
       }
     };
   }, [showScanner, isScanning]);

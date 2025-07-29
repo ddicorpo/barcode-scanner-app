@@ -40,6 +40,26 @@ button:active {
   background: #0d47a1;
 }
 
+/* Scanner button styles */
+button[style*="background: #4CAF50"] {
+  background: #4CAF50 !important;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button[style*="background: #f44336"] {
+  background: #f44336 !important;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 input, select {
   padding: 8px;
   margin: 8px 0;
