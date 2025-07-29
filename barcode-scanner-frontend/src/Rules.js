@@ -6,9 +6,13 @@ export default function Rules({ token }) {
   const [type, setType] = useState('length');
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(''); // New state for success messages
+  const [loading, setLoading] = useState(false); // New state for loading
 
   useEffect(() => {
     const fetchRules = async () => {
+      setLoading(true); // Start loading
+      setError(''); // Clear previous errors
       try {
         const res = await axios.get('http://localhost:5000/api/rules', {
           headers: { Authorization: `Bearer ${token}` }
@@ -16,6 +20,8 @@ export default function Rules({ token }) {
         setRules(res.data);
       } catch (err) {
         setError('Failed to fetch rules');
+      } finally {
+        setLoading(false); // End loading
       }
     };
     fetchRules();
@@ -24,38 +30,45 @@ export default function Rules({ token }) {
   const addRule = async e => {
     e.preventDefault();
     setError('');
+    setSuccess(''); // Clear previous success messages
     try {
       await axios.post('http://localhost:5000/api/rules', { type, value }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setValue('');
-      // Refresh rules
+      setSuccess('Rule added successfully!'); // Set success message
+      // Refresh rules after adding
       const res = await axios.get('http://localhost:5000/api/rules', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRules(res.data);
+      setTimeout(() => setSuccess(''), 3000); // Clear success message after 3 seconds
     } catch (err) {
       setError('Failed to add rule');
     }
   };
 
   const deleteRule = async id => {
+    setError('');
+    setSuccess(''); // Clear previous success messages
     try {
       await axios.delete(`http://localhost:5000/api/rules/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Refresh rules
+      setSuccess('Rule deleted successfully!'); // Set success message
+      // Refresh rules after deleting
       const res = await axios.get('http://localhost:5000/api/rules', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRules(res.data);
+      setTimeout(() => setSuccess(''), 3000); // Clear success message after 3 seconds
     } catch (err) {
       setError('Failed to delete rule');
     }
   };
 
   return (
-    <div>
+    <div className="card"> {/* Added .card class */}
       <h2 style={{ textAlign: 'center' }}>Your Rules</h2>
       <form onSubmit={addRule}>
         <select value={type} onChange={e => setType(e.target.value)}>
@@ -71,14 +84,24 @@ export default function Rules({ token }) {
         <button type="submit">Add Rule</button>
       </form>
       {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
-      <ul>
-        {rules.map(rule => (
-          <li key={rule._id}>
-            <b>{rule.type}</b>: {rule.value}
-            <button onClick={() => deleteRule(rule._id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      {success && <div style={{ color: 'green', marginTop: 8 }}>{success}</div>} {/* Display success message */}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', color: '#1976d2', marginTop: 20 }}>Loading rules...</div>
+      ) : (
+        <ul>
+          {rules.length === 0 && !error ? (
+            <p style={{ textAlign: 'center', color: '#555' }}>No rules added yet.</p>
+          ) : (
+            rules.map(rule => (
+              <li key={rule._id}>
+                <b>{rule.type}</b>: {rule.value}
+                <button onClick={() => deleteRule(rule._id)}>Delete</button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
     </div>
   );
 }

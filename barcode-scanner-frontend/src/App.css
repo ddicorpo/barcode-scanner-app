@@ -36,6 +36,10 @@ button:hover {
   background: #1565c0;
 }
 
+button:active {
+  background: #0d47a1;
+}
+
 input, select {
   padding: 8px;
   margin: 8px 0;
@@ -68,4 +72,12 @@ li {
 h1, h2, h3 {
   color: #1976d2;
   margin-top: 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: 24px 20px;
+  margin-bottom: 24px;
 }

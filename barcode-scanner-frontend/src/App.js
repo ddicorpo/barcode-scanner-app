@@ -22,6 +22,11 @@ function App() {
   return (
     <div className="app-container">
       <h1 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Barcode Rule Checker</h1>
+      <img
+        src="/ko-di-logo.png"
+        alt="Logo"
+        style={{ display: 'block', margin: '0 auto 12px', width: 60, height: 60 }}
+      />
       <nav>
         <button onClick={() => setPage('rules')}>Rules</button>
         <button onClick={() => setPage('validate')}>Validate Barcode</button>
