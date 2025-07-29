@@ -6,14 +6,15 @@ export default function Login({ setToken }) {
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState('');
+  const API = process.env.REACT_APP_API_URL;
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     try {
       const url = isRegister
-        ? 'http://localhost:5000/api/auth/register'
-        : 'http://localhost:5000/api/auth/login';
+        ? `${API}/auth/register`
+        : `${API}/auth/login`;
       const res = await axios.post(url, { username, password });
       if (!isRegister) setToken(res.data.token);
       else setIsRegister(false);

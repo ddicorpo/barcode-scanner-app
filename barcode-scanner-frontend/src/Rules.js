@@ -8,13 +8,14 @@ export default function Rules({ token }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(''); // New state for success messages
   const [loading, setLoading] = useState(false); // New state for loading
+  const API = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchRules = async () => {
       setLoading(true); // Start loading
       setError(''); // Clear previous errors
       try {
-        const res = await axios.get('http://localhost:5000/api/rules', {
+        const res = await axios.get(`${API}/rules`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRules(res.data);
@@ -32,13 +33,13 @@ export default function Rules({ token }) {
     setError('');
     setSuccess(''); // Clear previous success messages
     try {
-      await axios.post('http://localhost:5000/api/rules', { type, value }, {
+      await axios.post(`${API}/rules`, { type, value }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setValue('');
       setSuccess('Rule added successfully!'); // Set success message
       // Refresh rules after adding
-      const res = await axios.get('http://localhost:5000/api/rules', {
+      const res = await axios.get(`${API}/rules`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRules(res.data);
@@ -52,12 +53,12 @@ export default function Rules({ token }) {
     setError('');
     setSuccess(''); // Clear previous success messages
     try {
-      await axios.delete(`http://localhost:5000/api/rules/${id}`, {
+      await axios.delete(`${API}/rules/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Rule deleted successfully!'); // Set success message
       // Refresh rules after deleting
-      const res = await axios.get('http://localhost:5000/api/rules', {
+      const res = await axios.get(`${API}/rules`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRules(res.data);
