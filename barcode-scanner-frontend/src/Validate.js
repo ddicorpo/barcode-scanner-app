@@ -12,6 +12,7 @@ export default function Validate({ token }) {
   const [showScanner, setShowScanner] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const html5QrCodeRef = useRef(null);
+  const scannerRunningRef = useRef(false); // Track if scanner is actually running
 
   const handleValidate = async e => {
     e.preventDefault();
@@ -30,70 +31,85 @@ export default function Validate({ token }) {
     }
   };
 
-const startScanner = () => {
-  setError('');
-  setShowScanner(true);
-  setIsScanning(true);
-};
+  const startScanner = () => {
+    setError('');
+    setShowScanner(true);
+    setIsScanning(true);
+  };
 
-  const stopScanner = async () => {
-    if (html5QrCodeRef.current && isScanning) {
-      try {
-        await html5QrCodeRef.current.stop();
-        html5QrCodeRef.current.clear();
-      } catch (err) {
-        console.error('Scanner stop error:', err);
-      }
+  const stopScanner = () => {
+    if (html5QrCodeRef.current && scannerRunningRef.current) {
+      html5QrCodeRef.current.stop()
+        .then(() => {
+          scannerRunningRef.current = false;
+          if (html5QrCodeRef.current) {
+            html5QrCodeRef.current.clear();
+            html5QrCodeRef.current = null;
+          }
+        })
+        .catch(() => {
+          scannerRunningRef.current = false;
+          html5QrCodeRef.current = null;
+        });
+    } else {
+      html5QrCodeRef.current = null;
+      scannerRunningRef.current = false;
     }
     setShowScanner(false);
     setIsScanning(false);
-    html5QrCodeRef.current = null;
   };
 
-// Start scanner after DOM is ready
-useEffect(() => {
-  if (showScanner && isScanning) {
-    const initScanner = async () => {
-      try {
-        const html5QrCode = new Html5Qrcode("qr-reader");
-        html5QrCodeRef.current = html5QrCode;
+  // Start scanner after DOM is ready
+  useEffect(() => {
+    if (showScanner && isScanning && !scannerRunningRef.current) {
+      const initScanner = async () => {
+        try {
+          const html5QrCode = new Html5Qrcode("qr-reader");
+          html5QrCodeRef.current = html5QrCode;
 
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            supportedScanTypes: [
-              Html5Qrcode.SCAN_TYPE_CAMERA
-            ]
-          },
-          (decodedText) => {
-            setBarcode(decodedText);
-            stopScanner();
-          },
-          (errorMessage) => {
-            // Don't show these as errors to user
-          }
+          await html5QrCode.start(
+            { facingMode: "user" },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            (decodedText) => {
+                setBarcode(decodedText);
+                stopScanner();
+            },
+            (errorMessage) => {
+                // Don't show these as errors to user
+            }
         );
-      } catch (err) {
-        console.error('Scanner start error:', err);
-        setError('Camera access failed. Please check permissions.');
-        setShowScanner(false);
-        setIsScanning(false);
+          scannerRunningRef.current = true;
+        } catch (err) {
+          console.error('Scanner start error:', err);
+          setError('Camera access failed. Please check permissions.');
+          setShowScanner(false);
+          setIsScanning(false);
+          scannerRunningRef.current = false;
+        }
+      };
+
+      initScanner();
+    }
+
+    return () => {
+      if (html5QrCodeRef.current && scannerRunningRef.current) {
+        html5QrCodeRef.current.stop()
+          .then(() => {
+            scannerRunningRef.current = false;
+            if (html5QrCodeRef.current) {
+              html5QrCodeRef.current.clear();
+            }
+          })
+          .catch(() => {
+            scannerRunningRef.current = false;
+          });
+        html5QrCodeRef.current = null;
       }
     };
-
-    initScanner();
-  }
-
-  return () => {
-    if (html5QrCodeRef.current && isScanning) {
-      html5QrCodeRef.current.stop().catch(console.error);
-      html5QrCodeRef.current.clear();
-      html5QrCodeRef.current = null;
-    }
-  };
-}, [showScanner, isScanning]);
+  }, [showScanner, isScanning]);
 
   return (
     <div className="card">
