@@ -30,41 +30,11 @@ export default function Validate({ token }) {
     }
   };
 
-  const startScanner = async () => {
-    try {
-      setError('');
-      setShowScanner(true);
-      setIsScanning(true);
-
-      const html5QrCode = new Html5Qrcode("qr-reader");
-      html5QrCodeRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: "environment" }, // Use back camera
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          supportedScanTypes: [
-            Html5Qrcode.SCAN_TYPE_CAMERA
-          ]
-        },
-        (decodedText) => {
-          // Success callback - barcode scanned
-          setBarcode(decodedText);
-          stopScanner();
-        },
-        (errorMessage) => {
-          // Error callback - usually just "no barcode found"
-          // Don't show these as errors to user
-        }
-      );
-    } catch (err) {
-      console.error('Scanner start error:', err);
-      setError('Camera access failed. Please check permissions.');
-      setShowScanner(false);
-      setIsScanning(false);
-    }
-  };
+const startScanner = () => {
+  setError('');
+  setShowScanner(true);
+  setIsScanning(true);
+};
 
   const stopScanner = async () => {
     if (html5QrCodeRef.current && isScanning) {
@@ -80,14 +50,50 @@ export default function Validate({ token }) {
     html5QrCodeRef.current = null;
   };
 
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      if (html5QrCodeRef.current && isScanning) {
-        html5QrCodeRef.current.stop().catch(console.error);
+// Start scanner after DOM is ready
+useEffect(() => {
+  if (showScanner && isScanning) {
+    const initScanner = async () => {
+      try {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCodeRef.current = html5QrCode;
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            supportedScanTypes: [
+              Html5Qrcode.SCAN_TYPE_CAMERA
+            ]
+          },
+          (decodedText) => {
+            setBarcode(decodedText);
+            stopScanner();
+          },
+          (errorMessage) => {
+            // Don't show these as errors to user
+          }
+        );
+      } catch (err) {
+        console.error('Scanner start error:', err);
+        setError('Camera access failed. Please check permissions.');
+        setShowScanner(false);
+        setIsScanning(false);
       }
     };
-  }, [isScanning]);
+
+    initScanner();
+  }
+
+  return () => {
+    if (html5QrCodeRef.current && isScanning) {
+      html5QrCodeRef.current.stop().catch(console.error);
+      html5QrCodeRef.current.clear();
+      html5QrCodeRef.current = null;
+    }
+  };
+}, [showScanner, isScanning]);
 
   return (
     <div className="card">
