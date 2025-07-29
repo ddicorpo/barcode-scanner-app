@@ -39,18 +39,24 @@ export default function Validate({ token }) {
 
   const stopScanner = () => {
     if (html5QrCodeRef.current && scannerRunningRef.current) {
-      html5QrCodeRef.current.stop()
-        .then(() => {
-          scannerRunningRef.current = false;
-          if (html5QrCodeRef.current) {
-            html5QrCodeRef.current.clear();
+      try {
+        html5QrCodeRef.current.stop()
+          .then(() => {
+            scannerRunningRef.current = false;
+            if (html5QrCodeRef.current) {
+              html5QrCodeRef.current.clear();
+              html5QrCodeRef.current = null;
+            }
+          })
+          .catch(() => {
+            scannerRunningRef.current = false;
             html5QrCodeRef.current = null;
-          }
-        })
-        .catch(() => {
-          scannerRunningRef.current = false;
-          html5QrCodeRef.current = null;
-        });
+          });
+      } catch (err) {
+        // Swallow synchronous errors
+        scannerRunningRef.current = false;
+        html5QrCodeRef.current = null;
+      }
     } else {
       html5QrCodeRef.current = null;
       scannerRunningRef.current = false;
@@ -95,16 +101,22 @@ export default function Validate({ token }) {
 
     return () => {
       if (html5QrCodeRef.current && scannerRunningRef.current) {
-        html5QrCodeRef.current.stop()
-          .then(() => {
-            scannerRunningRef.current = false;
-            if (html5QrCodeRef.current) {
-              html5QrCodeRef.current.clear();
-            }
-          })
-          .catch(() => {
-            scannerRunningRef.current = false;
-          });
+        try {
+          html5QrCodeRef.current.stop()
+            .then(() => {
+              scannerRunningRef.current = false;
+              if (html5QrCodeRef.current) {
+                html5QrCodeRef.current.clear();
+              }
+            })
+            .catch(() => {
+              scannerRunningRef.current = false;
+            });
+        } catch (err) {
+          // Swallow synchronous errors in cleanup
+          scannerRunningRef.current = false;
+          html5QrCodeRef.current = null;
+        }
         html5QrCodeRef.current = null;
       } else {
         html5QrCodeRef.current = null;
