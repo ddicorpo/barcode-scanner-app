@@ -11,8 +11,39 @@ export default function Validate({ token }) {
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [rules, setRules] = useState([]);
+  const [selectedRuleIds, setSelectedRuleIds] = useState([]);
   const html5QrCodeRef = useRef(null);
   const scannerRunningRef = useRef(false);
+
+  // Fetch rules on mount
+  useEffect(() => {
+    axios.get(`${API}/rules`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        setRules(res.data);
+        // Select all rules by default
+        setSelectedRuleIds(res.data.map(rule => rule._id));
+      })
+      .catch(() => setRules([]));
+  }, [token]);
+
+  const handleRuleChange = (ruleId) => {
+    setSelectedRuleIds(prev =>
+      prev.includes(ruleId)
+        ? prev.filter(id => id !== ruleId)
+        : [...prev, ruleId]
+    );
+  };
+
+  const selectAllRules = () => {
+    setSelectedRuleIds(rules.map(rule => rule._id));
+  };
+
+  const deselectAllRules = () => {
+    setSelectedRuleIds([]);
+  };
 
   const handleValidate = async e => {
     e.preventDefault();
@@ -20,7 +51,11 @@ export default function Validate({ token }) {
     setResult(null);
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/validate`, { barcode }, {
+      const payload = { barcode };
+      if (selectedRuleIds.length > 0) {
+        payload.ruleIds = selectedRuleIds;
+      }
+      const res = await axios.post(`${API}/validate`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResult(res.data);
@@ -129,6 +164,53 @@ export default function Validate({ token }) {
     <div className="card">
       <h2 style={{ textAlign: 'center' }}>Validate Barcode</h2>
 
+      {/* Rule Selection Section */}
+      <div style={{ marginBottom: 16, border: '1px solid #ddd', padding: 12, borderRadius: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <b>Select rules to validate against:</b>
+          <div>
+            <button 
+              type="button" 
+              onClick={selectAllRules}
+              style={{ fontSize: '12px', padding: '4px 8px', marginRight: 4, background: '#4CAF50' }}
+            >
+              All
+            </button>
+            <button 
+              type="button" 
+              onClick={deselectAllRules}
+              style={{ fontSize: '12px', padding: '4px 8px', background: '#f44336' }}
+            >
+              None
+            </button>
+          </div>
+        </div>
+        
+        {rules.length === 0 ? (
+          <div style={{ color: '#666', fontStyle: 'italic' }}>No rules found. Create some rules first.</div>
+        ) : (
+          <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+            {rules.map(rule => (
+              <label key={rule._id} style={{ display: 'block', margin: '4px 0', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRuleIds.includes(rule._id)}
+                  onChange={() => handleRuleChange(rule._id)}
+                  style={{ marginRight: 8 }}
+                />
+                <span style={{ fontSize: '14px' }}>
+                  <b>{rule.type}</b>: {rule.value}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+        
+        <div style={{ fontSize: '12px', color: '#666', marginTop: 8 }}>
+          {selectedRuleIds.length} of {rules.length} rules selected
+        </div>
+      </div>
+
       {showScanner ? (
         <div style={{ marginBottom: 16 }}>
           <div style={{ textAlign: 'center', marginBottom: 8 }}>
@@ -168,7 +250,13 @@ export default function Validate({ token }) {
           value={barcode}
           onChange={e => setBarcode(e.target.value)}
         />
-        <button type="submit" style={{ width: '100%' }}>Validate</button>
+        <button 
+          type="submit" 
+          style={{ width: '100%' }}
+          disabled={selectedRuleIds.length === 0}
+        >
+          Validate Against {selectedRuleIds.length} Rule{selectedRuleIds.length !== 1 ? 's' : ''}
+        </button>
       </form>
 
       {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
@@ -181,6 +269,9 @@ export default function Validate({ token }) {
         result && (
           <div style={{ marginTop: 16 }}>
             <h3>Result: {result.allPassed ? '✅ Valid' : '❌ Invalid'}</h3>
+            <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
+              Tested against {result.totalRules || result.results.length} rule{(result.totalRules || result.results.length) !== 1 ? 's' : ''}
+            </div>
             <ul>
               {result.results.map((r, i) => (
                 <li key={i}>
