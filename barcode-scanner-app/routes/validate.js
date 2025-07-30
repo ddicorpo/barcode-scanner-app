@@ -26,10 +26,22 @@ function checkRule(barcode, rule) {
 // POST /api/validate
 router.post('/', auth, async (req, res) => {
   try {
-    const { barcode } = req.body;
+    const { barcode, ruleIds } = req.body; // Accept ruleIds array
     if (!barcode) return res.status(400).json({ message: 'Barcode is required' });
 
-    const rules = await Rule.find({ userId: req.user.id });
+    // Build the query - if ruleIds provided, filter by them
+    let query = { userId: req.user.id };
+    if (ruleIds && Array.isArray(ruleIds) && ruleIds.length > 0) {
+      query._id = { $in: ruleIds }; // Only get rules with these IDs
+    }
+
+    // Get rules (either all user's rules, or just selected ones)
+    const rules = await Rule.find(query);
+    
+    if (rules.length === 0) {
+      return res.status(404).json({ message: 'No rules found' });
+    }
+
     const results = rules.map(rule => ({
       rule,
       passed: checkRule(barcode, rule)
@@ -40,7 +52,8 @@ router.post('/', auth, async (req, res) => {
     res.json({
       barcode,
       allPassed,
-      results
+      results,
+      totalRules: results.length // Show how many rules were tested
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
